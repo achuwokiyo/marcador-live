@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Users, Clock, Edit3, Plus, QrCode, Lock, Unlock, AlertCircle, Play, Pause, Share2, Copy } from 'lucide-react';
+import { db } from './firebase';
+import { collection, doc, getDoc, setDoc, onSnapshot, query } from 'firebase/firestore';
 
 const LiveScoreboard = () => {
   const [view, setView] = useState('home');
@@ -13,10 +15,7 @@ const LiveScoreboard = () => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const POLL_INTERVAL = 3000;
-
   useEffect(() => {
-    // Detectar si estamos en una URL de partido público
     const path = window.location.pathname;
     if (path.startsWith('/partido/')) {
       const matchId = path.split('/partido/')[1];
@@ -29,12 +28,17 @@ const LiveScoreboard = () => {
 
   useEffect(() => {
     if (view === 'public' && currentMatch) {
-      const interval = setInterval(() => {
-        loadMatchData(currentMatch.id);
-      }, POLL_INTERVAL);
-      return () => clearInterval(interval);
+      const unsubscribe = onSnapshot(doc(db, 'matches', currentMatch.id), (doc) => {
+        if (doc.exists()) {
+          const match = doc.data();
+          setCurrentMatch(match);
+          setTimer(match.timerSeconds || 0);
+          setIsTimerRunning(match.timerRunning || false);
+        }
+      });
+      return () => unsubscribe();
     }
-  }, [view, currentMatch]);
+  }, [view, currentMatch?.id]);
 
   useEffect(() => {
     let interval = null;
@@ -50,49 +54,44 @@ const LiveScoreboard = () => {
 
   const loadMatches = async () => {
     try {
-      const stored = localStorage.getItem('matches');
-      if (stored) {
-        setMatches(JSON.parse(stored));
-      }
+      const matchesRef = collection(db, 'matches');
+      const unsubscribe = onSnapshot(matchesRef, (snapshot) => {
+        const matchesData = [];
+        snapshot.forEach((doc) => {
+          matchesData.push(doc.data());
+        });
+        setMatches(matchesData);
+        setLoading(false);
+      });
+      return () => unsubscribe();
     } catch (err) {
-      console.log('No matches yet');
+      console.log('Error loading matches:', err);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const loadMatchData = async (matchId) => {
     try {
-      const stored = localStorage.getItem('matches');
-      if (stored) {
-        const allMatches = JSON.parse(stored);
-        const match = allMatches.find(m => m.id === matchId);
-        if (match) {
-          setCurrentMatch(match);
-          setTimer(match.timerSeconds || 0);
-          setIsTimerRunning(match.timerRunning || false);
-        }
+      const matchDoc = await getDoc(doc(db, 'matches', matchId));
+      if (matchDoc.exists()) {
+        const match = matchDoc.data();
+        setCurrentMatch(match);
+        setTimer(match.timerSeconds || 0);
+        setIsTimerRunning(match.timerRunning || false);
       }
+      setLoading(false);
     } catch (err) {
-      console.log('Error loading match data');
+      console.log('Error loading match data:', err);
+      setLoading(false);
     }
   };
 
   const saveMatch = async (match) => {
     try {
-      const stored = localStorage.getItem('matches');
-      let allMatches = stored ? JSON.parse(stored) : [];
-      
-      const index = allMatches.findIndex(m => m.id === match.id);
-      if (index >= 0) {
-        allMatches[index] = match;
-      } else {
-        allMatches.push(match);
-      }
-      
-      localStorage.setItem('matches', JSON.stringify(allMatches));
-      setMatches(allMatches);
+      await setDoc(doc(db, 'matches', match.id), match);
     } catch (err) {
       setError('Error al guardar el partido');
+      console.error(err);
     }
   };
 
@@ -389,7 +388,7 @@ const LiveScoreboard = () => {
             </div>
 
             <div className="p-6 bg-gray-50 text-center">
-              <p className="text-gray-600 text-sm">🔄 Actualización automática cada 3 segundos</p>
+              <p className="text-gray-600 text-sm">🔄 Actualización automática en tiempo real</p>
             </div>
           </div>
         </div>
@@ -401,7 +400,6 @@ const LiveScoreboard = () => {
     const checkPin = () => {
       if (pinInput === currentMatch.pin) {
         setAuthenticated(true);
-        loadMatchData(currentMatch.id);
         setError('');
       } else {
         setError('PIN incorrecto');
@@ -555,64 +553,4 @@ const LiveScoreboard = () => {
                   <div className="flex gap-2">
                     <button onClick={() => updateScore('local', 1)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-semibold">+1</button>
                     <button onClick={() => updateScore('local', -1)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-semibold">-1</button>
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-gray-400">-</div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold">{currentMatch.awayTeam}</div>
-                  <div className="text-5xl font-bold text-green-600 my-3">{currentMatch.awayScore}</div>
-                  <div className="flex gap-2">
-                    <button onClick={() => updateScore('away', 1)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-semibold">+1</button>
-                    <button onClick={() => updateScore('away', -1)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-semibold">-1</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-700 mb-3">Estado del Partido</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { status: 'first_half', label: 'Iniciar 1ª Parte' },
-                  { status: 'halftime', label: 'Descanso' },
-                  { status: 'second_half', label: 'Iniciar 2ª Parte' },
-                  { status: 'finished', label: 'Finalizar' }
-                ].map(({ status, label }) => (
-                  <button
-                    key={status}
-                    onClick={() => updateMatchStatus(status)}
-                    className={`py-3 rounded-lg font-medium transition-colors ${
-                      currentMatch.status === status
-                        ? status === 'finished' ? 'bg-red-600 text-white' : status === 'halftime' ? 'bg-yellow-600 text-white' : 'bg-green-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <Trophy className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'create') return <CreateMatchForm />;
-  if (view === 'public') return <PublicView />;
-  if (view === 'admin') return <AdminPanel />;
-  return <HomePage />;
-};
-
-export default LiveScoreboard;
+                  
