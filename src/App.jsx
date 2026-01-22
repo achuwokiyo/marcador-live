@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Users, Clock, Edit3, Plus, QrCode, Lock, Unlock, AlertCircle, Play, Pause } from 'lucide-react';
+import { Trophy, Users, Clock, Edit3, Plus, QrCode, Lock, Unlock, AlertCircle, Play, Pause, Share2, Copy } from 'lucide-react';
 
 const LiveScoreboard = () => {
   const [view, setView] = useState('home');
@@ -11,11 +11,20 @@ const LiveScoreboard = () => {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const POLL_INTERVAL = 3000;
 
   useEffect(() => {
-    loadMatches();
+    // Detectar si estamos en una URL de partido público
+    const path = window.location.pathname;
+    if (path.startsWith('/partido/')) {
+      const matchId = path.split('/partido/')[1];
+      loadMatchData(matchId);
+      setView('public');
+    } else {
+      loadMatches();
+    }
   }, []);
 
   useEffect(() => {
@@ -97,6 +106,15 @@ const LiveScoreboard = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getPublicUrl = (matchId) => {
+    return `${window.location.origin}/partido/${matchId}`;
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert('¡URL copiada al portapapeles!');
+  };
+
   const StatusBadge = ({ status }) => {
     const statusConfig = {
       scheduled: { text: 'Programado', color: 'bg-gray-500' },
@@ -112,6 +130,48 @@ const LiveScoreboard = () => {
       <span className={`${config.color} text-white px-3 py-1 rounded-full text-sm font-medium inline-block`}>
         {config.text}
       </span>
+    );
+  };
+
+  const ShareModal = ({ matchId, onClose }) => {
+    const url = getPublicUrl(matchId);
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+        <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Share2 className="w-6 h-6" />
+            Compartir Marcador
+          </h3>
+          
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <p className="text-sm text-gray-600 mb-2">URL del marcador público:</p>
+            <div className="bg-white border border-gray-300 rounded-lg p-3 break-all text-sm">
+              {url}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => copyToClipboard(url)}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Copy className="w-4 h-4" />
+              Copiar URL
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            Comparte esta URL con el público para que vean el marcador en tiempo real
+          </p>
+        </div>
+      </div>
     );
   };
 
@@ -208,8 +268,7 @@ const LiveScoreboard = () => {
 
   const HomePage = () => {
     const handleViewMatch = async (match) => {
-      await loadMatchData(match.id);
-      setView('public');
+      setShowShareModal(match.id);
     };
 
     const handleAdminMatch = async (match) => {
@@ -258,8 +317,8 @@ const LiveScoreboard = () => {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => handleViewMatch(match)} className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-                      <QrCode className="w-4 h-4" />
-                      Ver Marcador
+                      <Share2 className="w-4 h-4" />
+                      Compartir Marcador
                     </button>
                     <button onClick={() => handleAdminMatch(match)} className="flex-1 bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
                       <Edit3 className="w-4 h-4" />
@@ -271,18 +330,33 @@ const LiveScoreboard = () => {
             )}
           </div>
         </div>
+
+        {showShareModal && (
+          <ShareModal 
+            matchId={showShareModal} 
+            onClose={() => setShowShareModal(false)} 
+          />
+        )}
       </div>
     );
   };
 
   const PublicView = () => {
-    if (!currentMatch) return null;
+    if (!currentMatch) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-green-900 to-blue-900 p-4 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <AlertCircle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Partido no encontrado</h2>
+            <p className="text-gray-600">El partido que buscas no existe o ha sido eliminado.</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-900 to-blue-900 p-4">
         <div className="max-w-2xl mx-auto">
-          <button onClick={() => setView('home')} className="mb-4 text-white hover:text-gray-200">← Volver</button>
-
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-8 text-white">
               <div className="flex items-center justify-center gap-2 mb-4">
