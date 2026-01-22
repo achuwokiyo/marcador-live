@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Users, Clock, Edit3, Plus, QrCode, Lock, Unlock, AlertCircle, Play, Pause, Share2, Copy } from 'lucide-react';
+import { Trophy, Users, Clock, Edit3, Plus, Lock, Unlock, AlertCircle, Play, Pause, Share2, Copy } from 'lucide-react';
 import { db } from './firebase';
 import { collection, doc, getDoc, setDoc, getDocs, onSnapshot } from 'firebase/firestore';
 
@@ -119,9 +119,7 @@ const LiveScoreboard = () => {
       second_half: { text: '2ª Parte', color: 'bg-green-500' },
       finished: { text: 'Finalizado', color: 'bg-red-500' }
     };
-
     const config = statusConfig[status] || statusConfig.scheduled;
-
     return (
       <span className={`${config.color} text-white px-3 py-1 rounded-full text-sm font-medium inline-block`}>
         {config.text}
@@ -131,7 +129,6 @@ const LiveScoreboard = () => {
 
   const ShareModal = ({ matchId, onClose }) => {
     const url = getPublicUrl(matchId);
-    
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
         <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
@@ -139,33 +136,20 @@ const LiveScoreboard = () => {
             <Share2 className="w-6 h-6" />
             Compartir Marcador
           </h3>
-          
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <p className="text-sm text-gray-600 mb-2">URL del marcador público:</p>
-            <div className="bg-white border border-gray-300 rounded-lg p-3 break-all text-sm">
-              {url}
-            </div>
+            <div className="bg-white border border-gray-300 rounded-lg p-3 break-all text-sm">{url}</div>
           </div>
-
           <div className="flex gap-2">
-            <button
-              onClick={() => copyToClipboard(url)}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-            >
+            <button onClick={() => copyToClipboard(url)} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
               <Copy className="w-4 h-4" />
               Copiar URL
             </button>
-            <button
-              onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-            >
+            <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
               Cerrar
             </button>
           </div>
-
-          <p className="text-xs text-gray-500 mt-4 text-center">
-            Comparte esta URL con el público para que vean el marcador en tiempo real
-          </p>
+          <p className="text-xs text-gray-500 mt-4 text-center">Comparte esta URL con el público para que vean el marcador en tiempo real</p>
         </div>
       </div>
     );
@@ -183,34 +167,26 @@ const LiveScoreboard = () => {
         alert('Por favor completa todos los campos');
         return;
       }
-      
-      try {
-        const newMatch = {
-          id: generateMatchId(),
-          localTeam: formData.localTeam,
-          awayTeam: formData.awayTeam,
-          localScore: 0,
-          awayScore: 0,
-          status: 'scheduled',
-          pin: formData.pin,
-          timerSeconds: 0,
-          timerRunning: false,
-          createdAt: new Date().toISOString()
-        };
-
-        await saveMatch(newMatch);
-        setView('home');
-      } catch (error) {
-        alert('Error al crear el partido: ' + error.message);
-      }
+      const newMatch = {
+        id: generateMatchId(),
+        localTeam: formData.localTeam,
+        awayTeam: formData.awayTeam,
+        localScore: 0,
+        awayScore: 0,
+        status: 'scheduled',
+        pin: formData.pin,
+        timerSeconds: 0,
+        timerRunning: false,
+        createdAt: new Date().toISOString()
+      };
+      await saveMatch(newMatch);
+      setView('home');
     };
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
         <div className="max-w-md mx-auto">
-          <button onClick={() => setView('home')} className="mb-4 text-blue-600 hover:text-blue-800">
-            ← Volver
-          </button>
+          <button onClick={() => setView('home')} className="mb-4 text-blue-600 hover:text-blue-800">← Volver</button>
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
               <Plus className="w-6 h-6" />
@@ -219,42 +195,18 @@ const LiveScoreboard = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Equipo Local</label>
-                <input
-                  type="text"
-                  value={formData.localTeam}
-                  onChange={(e) => setFormData({...formData, localTeam: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nombre del equipo local"
-                />
+                <input type="text" value={formData.localTeam} onChange={(e) => setFormData({...formData, localTeam: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Nombre del equipo local" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Equipo Visitante</label>
-                <input
-                  type="text"
-                  value={formData.awayTeam}
-                  onChange={(e) => setFormData({...formData, awayTeam: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nombre del equipo visitante"
-                />
+                <input type="text" value={formData.awayTeam} onChange={(e) => setFormData({...formData, awayTeam: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Nombre del equipo visitante" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">PIN de Administración</label>
-                <input
-                  type="text"
-                  value={formData.pin}
-                  onChange={(e) => setFormData({...formData, pin: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="PIN de 4 dígitos"
-                  maxLength="4"
-                />
+                <input type="text" value={formData.pin} onChange={(e) => setFormData({...formData, pin: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="PIN de 4 dígitos" maxLength="4" />
                 <p className="text-xs text-gray-500 mt-1">Guarda este PIN para poder administrar el partido</p>
               </div>
-              <button 
-                onClick={handleCreate}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                Crear Partido
-              </button>
+              <button onClick={handleCreate} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Crear Partido</button>
             </div>
           </div>
         </div>
@@ -263,17 +215,6 @@ const LiveScoreboard = () => {
   };
 
   const HomePage = () => {
-    const handleViewMatch = async (match) => {
-      setShowShareModal(match.id);
-    };
-
-    const handleAdminMatch = async (match) => {
-      setCurrentMatch(match);
-      setPinInput('');
-      setAuthenticated(false);
-      setView('admin');
-    };
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
         <div className="max-w-4xl mx-auto">
@@ -284,12 +225,10 @@ const LiveScoreboard = () => {
             </h1>
             <p className="text-gray-600">Gestión de partidos en tiempo real</p>
           </div>
-
           <button onClick={() => setView('create')} className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors mb-6 flex items-center justify-center gap-2">
             <Plus className="w-5 h-5" />
             Crear Nuevo Partido
           </button>
-
           <div className="space-y-4">
             {matches.length === 0 ? (
               <div className="bg-white rounded-xl shadow-lg p-8 text-center">
@@ -312,11 +251,11 @@ const LiveScoreboard = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleViewMatch(match)} className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                    <button onClick={() => setShowShareModal(match.id)} className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
                       <Share2 className="w-4 h-4" />
                       Compartir Marcador
                     </button>
-                    <button onClick={() => handleAdminMatch(match)} className="flex-1 bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
+                    <button onClick={() => { setCurrentMatch(match); setPinInput(''); setAuthenticated(false); setView('admin'); }} className="flex-1 bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
                       <Edit3 className="w-4 h-4" />
                       Administrar
                     </button>
@@ -326,13 +265,7 @@ const LiveScoreboard = () => {
             )}
           </div>
         </div>
-
-        {showShareModal && (
-          <ShareModal 
-            matchId={showShareModal} 
-            onClose={() => setShowShareModal(false)} 
-          />
-        )}
+        {showShareModal && <ShareModal matchId={showShareModal} onClose={() => setShowShareModal(false)} />}
       </div>
     );
   };
@@ -349,7 +282,6 @@ const LiveScoreboard = () => {
         </div>
       );
     }
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-900 to-blue-900 p-4">
         <div className="max-w-2xl mx-auto">
@@ -359,16 +291,12 @@ const LiveScoreboard = () => {
                 <Clock className="w-5 h-5" />
                 <StatusBadge status={currentMatch.status} />
               </div>
-              
               {(currentMatch.status === 'first_half' || currentMatch.status === 'second_half') && (
                 <div className="text-center mb-6">
-                  <div className="text-5xl font-bold font-mono bg-black bg-opacity-20 rounded-lg py-3 px-6 inline-block">
-                    {formatTime(timer)}
-                  </div>
+                  <div className="text-5xl font-bold font-mono bg-black bg-opacity-20 rounded-lg py-3 px-6 inline-block">{formatTime(timer)}</div>
                   <div className="text-sm mt-2 opacity-90">Tiempo de juego</div>
                 </div>
               )}
-
               <div className="text-center">
                 <div className="flex items-center justify-around">
                   <div className="flex-1 text-center">
@@ -383,7 +311,6 @@ const LiveScoreboard = () => {
                 </div>
               </div>
             </div>
-
             <div className="p-6 bg-gray-50 text-center">
               <p className="text-gray-600 text-sm">🔄 Actualización en tiempo real</p>
             </div>
@@ -406,7 +333,6 @@ const LiveScoreboard = () => {
 
     const updateMatchStatus = async (newStatus) => {
       const updatedMatch = { ...currentMatch, status: newStatus };
-      
       if (newStatus === 'first_half') {
         setTimer(0);
         setIsTimerRunning(true);
@@ -425,7 +351,6 @@ const LiveScoreboard = () => {
         updatedMatch.timerRunning = false;
         updatedMatch.timerSeconds = timer;
       }
-      
       setCurrentMatch(updatedMatch);
       await saveMatch(updatedMatch);
     };
@@ -433,11 +358,7 @@ const LiveScoreboard = () => {
     const toggleTimer = async () => {
       const newTimerState = !isTimerRunning;
       setIsTimerRunning(newTimerState);
-      const updatedMatch = { 
-        ...currentMatch, 
-        timerRunning: newTimerState,
-        timerSeconds: timer 
-      };
+      const updatedMatch = { ...currentMatch, timerRunning: newTimerState, timerSeconds: timer };
       setCurrentMatch(updatedMatch);
       await saveMatch(updatedMatch);
     };
@@ -445,11 +366,7 @@ const LiveScoreboard = () => {
     const resetTimer = async () => {
       setTimer(0);
       setIsTimerRunning(false);
-      const updatedMatch = { 
-        ...currentMatch, 
-        timerSeconds: 0,
-        timerRunning: false 
-      };
+      const updatedMatch = { ...currentMatch, timerSeconds: 0, timerRunning: false };
       setCurrentMatch(updatedMatch);
       await saveMatch(updatedMatch);
     };
@@ -474,19 +391,10 @@ const LiveScoreboard = () => {
               <Lock className="w-16 h-16 text-orange-600 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Panel de Administración</h2>
               <p className="text-gray-600 text-center mb-6">{currentMatch.localTeam} vs {currentMatch.awayTeam}</p>
-              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Introduce el PIN</label>
-                  <input
-                    type="text"
-                    value={pinInput}
-                    onChange={(e) => setPinInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && checkPin()}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center text-2xl tracking-widest"
-                    placeholder="••••"
-                    maxLength="4"
-                  />
+                  <input type="text" value={pinInput} onChange={(e) => setPinInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && checkPin()} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center text-2xl tracking-widest" placeholder="••••" maxLength="4" />
                 </div>
                 {error && (
                   <div className="flex items-center gap-2 text-red-600 text-sm">
@@ -494,10 +402,7 @@ const LiveScoreboard = () => {
                     {error}
                   </div>
                 )}
-                <button
-                  onClick={checkPin}
-                  className="w-full bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
-                >
+                <button onClick={checkPin} className="w-full bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
                   <Unlock className="w-5 h-5" />
                   Desbloquear
                 </button>
@@ -511,38 +416,25 @@ const LiveScoreboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-4">
         <div className="max-w-2xl mx-auto">
-          <button onClick={() => { setAuthenticated(false); setView('home'); }} className="mb-4 text-orange-600 hover:text-orange-800">
-            ← Cerrar Sesión
-          </button>
-
+          <button onClick={() => { setAuthenticated(false); setView('home'); }} className="mb-4 text-orange-600 hover:text-orange-800">← Cerrar Sesión</button>
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               <Edit3 className="w-6 h-6" />
               Panel de Control
             </h2>
-
             <div className="bg-gradient-to-r from-blue-600 to-green-600 rounded-xl p-6 mb-6 text-white">
               <div className="text-center mb-4">
                 <div className="text-6xl font-bold font-mono mb-2">{formatTime(timer)}</div>
                 <div className="text-sm opacity-90">Cronómetro del partido</div>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={toggleTimer}
-                  className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 py-2 rounded-lg font-medium flex items-center justify-center gap-2"
-                >
+                <button onClick={toggleTimer} className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 py-2 rounded-lg font-medium flex items-center justify-center gap-2">
                   {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   {isTimerRunning ? 'Pausar' : 'Iniciar'}
                 </button>
-                <button
-                  onClick={resetTimer}
-                  className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 py-2 rounded-lg font-medium"
-                >
-                  Reiniciar
-                </button>
+                <button onClick={resetTimer} className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 py-2 rounded-lg font-medium">Reiniciar</button>
               </div>
             </div>
-
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <div className="flex items-center justify-around mb-2">
                 <div className="text-center">
@@ -564,7 +456,6 @@ const LiveScoreboard = () => {
                 </div>
               </div>
             </div>
-
             <div>
               <h3 className="font-semibold text-gray-700 mb-3">Estado del Partido</h3>
               <div className="grid grid-cols-2 gap-2">
@@ -574,15 +465,7 @@ const LiveScoreboard = () => {
                   { status: 'second_half', label: 'Iniciar 2ª Parte' },
                   { status: 'finished', label: 'Finalizar' }
                 ].map(({ status, label }) => (
-                  <button
-                    key={status}
-                    onClick={() => updateMatchStatus(status)}
-                    className={`py-3 rounded-lg font-medium transition-colors ${
-                      currentMatch.status === status
-                        ? status === 'finished' ? 'bg-red-600 text-white' : status === 'halftime' ? 'bg-yellow-600 text-white' : 'bg-green-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
+                  <button key={status} onClick={() => updateMatchStatus(status)} className={`py-3 rounded-lg font-medium transition-colors ${currentMatch.status === status ? status === 'finished' ? 'bg-red-600 text-white' : status === 'halftime' ? 'bg-yellow-600 text-white' : 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
                     {label}
                   </button>
                 ))}
