@@ -1,2 +1,0 @@
-# marcador-live
-test-marcadorlive
